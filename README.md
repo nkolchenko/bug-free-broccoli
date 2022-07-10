@@ -1,4 +1,4 @@
-###Prerequisites:
+### Prerequisites:
 
 0. Clone this repo to your github account.
 1. Create an AWS account (root account).
@@ -19,13 +19,13 @@ That is why it is needed to:
 - create an S3 bucket to store the `tfstate` iself
 - create some storage for `tflock`. In this example I'm using the DynamoDB.
 
-###How to provision the solution and deploy the application.
+### How to provision the solution and deploy the application.
 
 1. proceed to `terraform-assets/01_tf-backend`, run `terraform init` and `terraform apply`. That will create S3 bucket that 
    is used to store `tfstate` and a DynamoDB for `tflock`.
 
    ```
-   % cd terraform-assets/tf-backend
+   % cd terraform-assets/01_tf-backend
    % terraform init
    % terraform apply --var-file="../common.tfvars"
    ```
@@ -128,8 +128,7 @@ so I won't be able to issue Certificate for HTTPS. But still configs are there.
 
 ### High level architecture (This can be a diagram or a simple description of the architecture, be ready to talk about it in your interview).
 
-
-
+TBD 
 
 ### High level description of improvements (if any).
 
