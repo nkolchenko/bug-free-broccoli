@@ -1,9 +1,14 @@
+/* This file describes aws_security_groups:
+
+- http_from_internet (tcp:80 from 0.0.0.0 to LB)
+- ecs_task_sg allows incoming tcp:var.container_port from LB to ECS ec2 instances
+- rds_sg (tcp:var.rds_port from vpc). Can be tightened to ECS ec2 instances only. But RDS runs in "private" mode.
+*/
+
 resource "aws_security_group" "http_from_internet" {
   name        = "http_from_internet"
   description = "Allow http inbound traffic"
   vpc_id      = aws_vpc.vpc.id
-
-  # intentionally listening on 3000 instead of common ports.
 
   ingress {
     description = "http"
@@ -39,9 +44,11 @@ resource "aws_security_group" "ecs_task_sg" {
     to_port         = var.container_port
     protocol        = "tcp"
     security_groups = [aws_security_group.http_from_internet.id]
-    #cidr_blocks = ["10.0.0.0/16"]
+    #cidr_blocks = ["10.0.0.0/16"]    # it is possible to allow traffic from whole VPC if needed
     #cidr_blocks = [aws_vpc.vpc.cidr_block]
   }
+  /*
+  # ssh from bastion/vpc if needed
   ingress {
     description = "vpc-ssh"
     from_port   = 22
@@ -49,6 +56,7 @@ resource "aws_security_group" "ecs_task_sg" {
     protocol    = "tcp"
     cidr_blocks = [aws_vpc.vpc.cidr_block]
   }
+  */
   egress {
     description = "allow-all"
     from_port   = 0
@@ -75,9 +83,9 @@ resource "aws_security_group" "rds_sg" {
     from_port       = var.rds_port
     to_port         = var.rds_port
     protocol        = "tcp"
-    security_groups = [aws_security_group.ecs_task_sg.id] # allows access from ecs ec2
+    #security_groups = [aws_security_group.ecs_task_sg.id]    # allows access from ecs ec2 only
     #cidr_blocks = ["10.0.0.0/16"]
-    #cidr_blocks = [aws_vpc.vpc.cidr_block]
+    cidr_blocks = [aws_vpc.vpc.cidr_block]
   }
   egress {
     description = "allow-all"
