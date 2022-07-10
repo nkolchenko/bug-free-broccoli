@@ -1,0 +1,13 @@
+version: 0.2
+phases:
+
+  build:
+    commands:
+      # I want to stop if TF code is bad, so running validate here
+      - cat /codebuild/output/tmp/script.sh
+      - |
+        for i in `ls -d terraform-assets/*/`; do
+          terraform -chdir=./$i init
+          terraform -chdir=./$i validate
+          terraform -chdir=./$i plan -var-file="../common.tfvars"
+        done
