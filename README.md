@@ -126,15 +126,46 @@ Parts of lb.tf about aws_lb_listener and aws_acm_certificate are commented out a
 so I won't be able to issue Certificate for HTTPS. But still configs are there.
 
 
-### High level architecture (This can be a diagram or a simple description of the architecture, be ready to talk about it in your interview).
+### High level architecture (...a simple description of the architecture).
+ 
+Everything is deployed with Terraform and Infrastructure is split int "layers". S3 and dynamoDB are used to store `tfstate`
+and `tflock`.
 
-TBD 
+This solution has bare minimum of AWS services ( "...minimum required to satisfy the key requirements...") and doesn't yet 
+include Monitoring, Logging and Observability tools/elements, ECR, Bastion, Security features (though all that is listed
+in "Improvements" part).
+
+VPC is divided into public and private subnets for security reasons. 
+
+Public Subnets are used for Loadbalancing (LB) and Nat Gateways. 
+Private Subnets are used to host ECS EC2 instances (these are deployed from template by the Auto Scaling Group)and RDS 
+instances (multy-az RDS with postgres). Workload is packed into containers that run on ECS. RDS runs in Private subnets 
+and accepts connections only from ECS EC2 hosts (additional security). That behaviour is controlled via Security Groups (SG).
+
+Additionally, there is an Internet Gateway to provide internet connectivity for VPC. There are some additional services 
+as Secret Manager (to avoid storing of the most important credentials in plaintext).
+
+Both Public and Private subnets spawn across several Availability Zones (AZ) within the same region. That provides redundancy.
+This solution tolerates loss os one of AZ (as there is a multy-az RDS and ECS containers instances are spread between AZs).
+
+LB receives traffic on LB domain name:80 and forwards it to the Target group that lists IP addresses of ECS containers.
+ECS Containers allowed reaching RDS. Access is controlled with the SGs (later it is needed to have a FQDN and SSL cert, 
+so tcp:80 is forwarded to tcp:443 and Route53 is used).
+
+Solution is deployed through the AWS Code Pipeline. That creates a worker instance with the terraform image and runs `
+terraform apply` for all the layers (everything is fetched from GitHub). AWS Code Pipeline was chosen instead of GitHub 
+Actions because I tried to keep every service with the same provider (AWS).
 
 ### High level description of improvements (if any).
 
-0. Tighten IAM policies (at the moment they are too open)
+0. Tighten IAM policies (at the moment they are too open).
 1. Add logging and monitoring (a separate trail in CloudTrail keeping API-logs indefinitely, CloudWatch dashboard
 with top metrics, vpc flow logs, ALB access logs)
 2. Add additional pipeline step to build and push image to repository. 
-3. Troubleshoot the `TestChallengeApp` so it is not trying to create the database in default tablespace. Similar case is
+3. Add ECR to host custom images (and not fetch them from dockerhub, etc.)
+4. Create SSL certificates and use own domain to send traffic to ALB listener. Right now only http is used.
+5. Troubleshoot the `TestChallengeApp` so it is not trying to create the database in default tablespace. Similar case is
 here (https://dba.stackexchange.com/questions/204807/why-do-i-get-a-postgresql-permission-error-when-specifying-a-tablespace-in-the)
+6. Adjust the size of subnets (technically, I don't need that many addresses there).
+7. Add WAF and a bastion host.
+8. Make code more "DRY" so some repeated patterns are moved out.
