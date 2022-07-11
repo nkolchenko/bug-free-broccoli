@@ -77,11 +77,6 @@ Repo structure:
     │   ├── outputs.tf
     │   ├── tf-backend.tf
     │   └── variables.tf
-    ├── 04_ecr
-    │   ├── ecr.tf
-    │   ├── outputs.tf
-    │   ├── tf-backend.tf
-    │   └── variables.tf
     ├── 05_ecs
     │   ├── aws_ecs.tf
     │   ├── data_source.tf
